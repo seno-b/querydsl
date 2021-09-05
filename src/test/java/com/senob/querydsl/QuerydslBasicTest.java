@@ -1,9 +1,11 @@
 package com.senob.querydsl;
 
 import com.querydsl.core.QueryResults;
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.senob.querydsl.entity.Member;
 import com.senob.querydsl.entity.QMember;
+import com.senob.querydsl.entity.QTeam;
 import com.senob.querydsl.entity.Team;
 import org.assertj.core.api.Assert;
 import org.assertj.core.api.Assertions;
@@ -18,6 +20,7 @@ import javax.persistence.EntityManager;
 import java.util.List;
 
 import static com.senob.querydsl.entity.QMember.member;
+import static com.senob.querydsl.entity.QTeam.team;
 
 @SpringBootTest
 @Transactional
@@ -33,8 +36,8 @@ public class QuerydslBasicTest {
 
         jpaQueryFactory = new JPAQueryFactory(em);
 
-        Team teamA = new Team("TeamA");
-        Team teamB = new Team("TeamB");
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
 
         em.persist(teamA);
         em.persist(teamB);
@@ -183,5 +186,49 @@ public class QuerydslBasicTest {
         Assertions.assertThat(queryResults.getLimit()).isEqualTo(2);
         Assertions.assertThat(queryResults.getOffset()).isEqualTo(1);
         Assertions.assertThat(queryResults.getResults().size()).isEqualTo(2);
+    }
+
+    @Test
+    public void aggregation() {
+        List<Tuple> result = jpaQueryFactory
+                .select(
+                        member.count()
+                        , member.age.min()
+                        , member.age.max()
+                        , member.age.avg()
+                        , member.age.sum()
+                )
+                .from(member)
+                .fetch();
+
+        Tuple tuple = result.get(0);
+        Assertions.assertThat(tuple.get(member.count())).isEqualTo(4);
+        Assertions.assertThat(tuple.get(member.age.min())).isEqualTo(10);
+        Assertions.assertThat(tuple.get(member.age.max())).isEqualTo(40);
+        Assertions.assertThat(tuple.get(member.age.avg())).isEqualTo(25);
+        Assertions.assertThat(tuple.get(member.age.sum())).isEqualTo(100);
+    }
+
+    @Test
+    public void group() {
+        List<Tuple> result = jpaQueryFactory
+                .select(
+                        team.name
+                        , member.age.avg()
+                )
+                .from(member)
+                .join(member.team, team)
+                .groupBy(team.name)
+                .fetch();
+
+        Tuple teamA = result.get(0);
+        Tuple teamB = result.get(1);
+
+        Assertions.assertThat(teamA.get(team.name)).isEqualTo("teamA");
+        Assertions.assertThat(teamA.get(member.age.avg())).isEqualTo(15);
+
+        Assertions.assertThat(teamB.get(team.name)).isEqualTo("teamB");
+        Assertions.assertThat(teamB.get(member.age.avg())).isEqualTo(35);
+
     }
 }
