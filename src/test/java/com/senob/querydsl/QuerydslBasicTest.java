@@ -5,6 +5,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.senob.querydsl.entity.Member;
 import com.senob.querydsl.entity.QMember;
 import com.senob.querydsl.entity.Team;
+import org.assertj.core.api.Assert;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -152,5 +153,35 @@ public class QuerydslBasicTest {
         Assertions.assertThat(member6.getUsername()).isEqualTo("member6");
         Assertions.assertThat(nullMember.getUsername()).isNull();
 
+    }
+
+    @Test
+    public void paging1() {
+
+        List<Member> result = jpaQueryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetch();
+
+        Assertions.assertThat(result.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void paging2() {
+
+        QueryResults<Member> queryResults = jpaQueryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetchResults();
+
+
+        Assertions.assertThat(queryResults.getTotal()).isEqualTo(4);
+        Assertions.assertThat(queryResults.getLimit()).isEqualTo(2);
+        Assertions.assertThat(queryResults.getOffset()).isEqualTo(1);
+        Assertions.assertThat(queryResults.getResults().size()).isEqualTo(2);
     }
 }
