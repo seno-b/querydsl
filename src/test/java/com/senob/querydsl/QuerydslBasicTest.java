@@ -1,7 +1,9 @@
 package com.senob.querydsl;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.senob.querydsl.entity.Member;
+import com.senob.querydsl.entity.QMember;
 import com.senob.querydsl.entity.Team;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+
 import static com.senob.querydsl.entity.QMember.member;
 
 @SpringBootTest
@@ -94,6 +97,25 @@ public class QuerydslBasicTest {
                 .fetchOne();
 
         Assertions.assertThat(findMember.getUsername()).isEqualTo("member1");
+
+    }
+
+    @Test
+    public void resultFetch() {
+        /*Member member = jpaQueryFactory
+                .selectFrom(member)
+                .fetchOne();
+
+        QueryResults<T> tQueryResults = jpaQueryFactory
+                .selectFrom(member)
+                .fetchResults();
+
+        List<T> content = tQueryResults.getResults();
+        long total = tQueryResults.getTotal();*/
+
+        Member member = jpaQueryFactory
+                .selectFrom(QMember.member)
+                .fetchFirst();
 
     }
 }
