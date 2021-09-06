@@ -2,6 +2,7 @@ package com.senob.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.senob.querydsl.entity.Member;
 import com.senob.querydsl.entity.QMember;
@@ -355,6 +356,94 @@ public class QuerydslBasicTest {
 
         boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
         Assertions.assertThat(loaded).as("페치 조인 적용").isTrue();
+    }
+
+    /*
+    * 나이가 가장 많은 회원 조회
+    * */
+    @Test
+    public void subQuery() {
+
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> result = jpaQueryFactory
+                .selectFrom(member)
+                .where(member.age.eq(
+                        JPAExpressions
+                                .select(memberSub.age.max())
+                                .from(memberSub)
+                ))
+                .fetch();
+
+        Assertions.assertThat(result).extracting("age")
+                .containsExactly(40);
+
+    }
+
+    /*
+    * 나이가 평균 이상인 회원
+    * */
+    @Test
+    public void subQueryGoe() {
+
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> result = jpaQueryFactory
+                .selectFrom(member)
+                .where(member.age.goe(
+                        JPAExpressions
+                                .select(memberSub.age.avg())
+                                .from(memberSub)
+                ))
+                .fetch();
+
+        Assertions.assertThat(result).extracting("age")
+                .containsExactly(30, 40);
+
+    }
+
+    /*
+    * in 예제
+    * */
+    @Test
+    public void subQueryIn() {
+
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> result = jpaQueryFactory
+                .selectFrom(member)
+                .where(member.age.in(
+                        JPAExpressions
+                                .select(memberSub.age)
+                                .from(memberSub)
+                                .where(memberSub.age.gt(10))
+                ))
+                .fetch();
+
+        Assertions.assertThat(result).extracting("age")
+                .containsExactly(20, 30, 40);
+
+    }
+
+    /*
+     * in 예제
+     * */
+    @Test
+    public void selectSubQuery() {
+
+        QMember memberSub = new QMember("memberSub");
+
+        List<Tuple> result = jpaQueryFactory
+                .select(member.username
+                        , JPAExpressions.select(memberSub.age.avg())
+                                .from(memberSub))
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+
     }
 
 
