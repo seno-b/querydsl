@@ -7,6 +7,7 @@ import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.senob.querydsl.dto.MemberDto;
 import com.senob.querydsl.entity.Member;
 import com.senob.querydsl.entity.QMember;
 import com.senob.querydsl.entity.QTeam;
@@ -438,7 +439,7 @@ public class QuerydslBasicTest {
 
         List<Tuple> result = jpaQueryFactory
                 .select(member.username
-                        , JPAExpressions.select(memberSub.age.avg())
+                        , JPAExpressions.select(memberSub.age.avg().as("agetest"))
                                 .from(memberSub))
                 .from(member)
                 .fetch();
@@ -529,6 +530,16 @@ public class QuerydslBasicTest {
             Integer age = tuple.get(member.age);
             System.out.println("username = " + username);
             System.out.println("age = " + age);
+        }
+    }
+
+    @Test
+    public void findDtoByJPQL() {
+        List<MemberDto> resultList = em.createQuery("select new com.senob.querydsl.dto.MemberDto(m.username, m.age) from Member m", MemberDto.class)
+                .getResultList();
+
+        for (MemberDto memberDto : resultList) {
+            System.out.println("memberDto = " + memberDto);
         }
     }
 }
