@@ -3,11 +3,14 @@ package com.senob.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.senob.querydsl.dto.MemberDto;
+import com.senob.querydsl.dto.UserDto;
 import com.senob.querydsl.entity.Member;
 import com.senob.querydsl.entity.QMember;
 import com.senob.querydsl.entity.QTeam;
@@ -540,6 +543,63 @@ public class QuerydslBasicTest {
 
         for (MemberDto memberDto : resultList) {
             System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findDtoBySetter() {
+        List<MemberDto> result = jpaQueryFactory
+                .select(Projections.bean(MemberDto.class, member.username, member.age)) // 기본 생성자가 필요함.
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findDtoByField() {
+        List<MemberDto> result = jpaQueryFactory
+                .select(Projections.fields(MemberDto.class, member.username, member.age)) // 필드에 값을 바로 넣어 줌, private 인데 어떻게? 자바 리플렉션이나 가능한 라이브러리 가있음
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findDtoByConstructor() {
+        List<MemberDto> result = jpaQueryFactory
+                .select(Projections.constructor(MemberDto.class, member.username, member.age)) // 생성자 형태라서 타입이 맞아야 함.
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findUserDtoByField() {
+
+        QMember memberSub = new QMember("memberSub");
+
+        List<UserDto> result = jpaQueryFactory
+                .select(Projections.fields(UserDto.class,
+                        Expressions.as(member.username, "name"), // projections alias 주는 법
+                        ExpressionUtils.as(JPAExpressions
+                            .select(memberSub.age.max())
+                            .from(memberSub)
+                        , "age")
+                ))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("memberDto = " + userDto);
         }
     }
 }
