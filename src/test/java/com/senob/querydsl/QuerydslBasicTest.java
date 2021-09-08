@@ -1,5 +1,6 @@
 package com.senob.querydsl;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
@@ -20,6 +21,8 @@ import org.assertj.core.api.Assert;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.commons.util.StringUtils;
+import org.mockito.internal.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
@@ -620,5 +623,32 @@ public class QuerydslBasicTest {
         for (MemberDto memberDto : result) {
             System.out.println("memberDto = " + memberDto);
         }
+    }
+
+    @Test
+    public void dynamicQuery_BooleanBuilder() {
+        String usernameCond = "member1";
+        Integer ageCond = null;
+
+        List<Member> result = searchMember1(usernameCond, ageCond);
+
+        Assertions.assertThat(result.size()).isEqualTo(1);
+    }
+
+    private List<Member> searchMember1(String usernameCond, Integer ageCond) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if(StringUtils.isNotBlank(usernameCond)){
+            builder.and(member.username.eq(usernameCond));
+        }
+
+        if (ageCond != null) {
+            builder.and(member.age.eq(ageCond));
+        }
+
+        return jpaQueryFactory
+                .selectFrom(member)
+                .where(builder)
+                .fetch();
     }
 }
