@@ -10,6 +10,7 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.senob.querydsl.dto.MemberDto;
+import com.senob.querydsl.dto.QMemberDto;
 import com.senob.querydsl.dto.UserDto;
 import com.senob.querydsl.entity.Member;
 import com.senob.querydsl.entity.QMember;
@@ -600,6 +601,24 @@ public class QuerydslBasicTest {
 
         for (UserDto userDto : result) {
             System.out.println("memberDto = " + userDto);
+        }
+    }
+
+    /**
+     * Dto 내의 QueryProjection 설정
+     *
+     * 장점 : 컴파일 시점에 오류를 캐치할 수 있음.
+     * 단점 : Dto가 전체적인 레이어에서 사용됨으로 JPA를 사용하지 않는다고 할때 전체적인 소스코드를 수정해야 하는 문제가 있음 (종속성의 위험이 따름)
+     */
+    @Test
+    public void fidnDtoByQueryProjection() {
+        List<MemberDto> result = jpaQueryFactory
+                .select(new QMemberDto(member.username, member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
         }
     }
 }
