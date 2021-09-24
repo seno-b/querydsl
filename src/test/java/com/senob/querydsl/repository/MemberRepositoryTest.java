@@ -3,6 +3,7 @@ package com.senob.querydsl.repository;
 import com.senob.querydsl.dto.MemberSearchCondition;
 import com.senob.querydsl.dto.MemberTeamDto;
 import com.senob.querydsl.entity.Member;
+import com.senob.querydsl.entity.QMember;
 import com.senob.querydsl.entity.Team;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -93,6 +94,30 @@ public class MemberRepositoryTest {
 
         Assertions.assertThat(result.getTotalPages()).isEqualTo(2);
         Assertions.assertThat(result.getContent()).extracting("username").containsExactly("member1", "member2", "member3");
+
+    }
+
+    @Test
+    public void querydslPredicateExecutorTest()
+    {
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+
+        em.persist(teamA);
+        em.persist(teamB);
+
+        Member member1 = new Member("member1", 10, teamA);
+        Member member2 = new Member("member2", 20, teamA);
+
+        Member member3 = new Member("member3", 30, teamB);
+        Member member4 = new Member("member4", 40, teamB);
+
+        Iterable<Member> result = memberRepository.findAll(QMember.member.age.between(10, 40));
+
+        for (Member member : result) {
+            System.out.println("member = " + member);
+        }
+
 
     }
 }
