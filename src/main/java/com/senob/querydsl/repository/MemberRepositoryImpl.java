@@ -3,6 +3,7 @@ package com.senob.querydsl.repository;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.senob.querydsl.dto.MemberSearchCondition;
@@ -11,8 +12,8 @@ import com.senob.querydsl.entity.Member;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 import org.springframework.data.support.PageableExecutionUtils;
-import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
 import java.util.List;
@@ -21,18 +22,43 @@ import static com.senob.querydsl.entity.QMember.member;
 import static com.senob.querydsl.entity.QTeam.team;
 import static org.springframework.util.StringUtils.hasText;
 
-public class MemberRepositoryImpl implements MemberRepositoryCustom{
+public class MemberRepositoryImpl extends QuerydslRepositorySupport implements MemberRepositoryCustom{
+    /**
+     * Creates a new {@link QuerydslRepositorySupport} instance for the given domain type.
+     *
+     */
+    public MemberRepositoryImpl(EntityManager em) {
+        super(Member.class);
+        this.queryFactory = new JPAQueryFactory(em);
+    }
 
     private final JPAQueryFactory queryFactory;
 
+    /*
     public MemberRepositoryImpl(EntityManager em) {
         this.queryFactory = new JPAQueryFactory(em);
-    }
+    }*/
 
     @Override
     public List<MemberTeamDto> search(MemberSearchCondition condition) {
 
-        return queryFactory
+        return from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe())
+                )
+                .select(Projections.constructor(MemberTeamDto.class,
+                member.id.as("memberId"),
+                member.username,
+                member.age,
+                team.id.as("teamId"),
+                team.name.as("teamName")))
+        .fetch();
+
+        /*return queryFactory
                 .select(Projections.constructor(MemberTeamDto.class,
                         member.id.as("memberId"),
                         member.username,
@@ -47,7 +73,7 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
                         ageGoe(condition.getAgeGoe()),
                         ageLoe(condition.getAgeLoe())
                 )
-                .fetch();
+                .fetch();*/
     }
 
     private BooleanExpression usernameEq(String username) {
@@ -68,7 +94,7 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
 
     @Override
     public Page<MemberTeamDto> searchPageSimple(MemberSearchCondition condition, Pageable pageable) {
-        QueryResults<MemberTeamDto> result = queryFactory
+        /*QueryResults<MemberTeamDto> result = queryFactory
                 .select(Projections.constructor(MemberTeamDto.class,
                         member.id.as("memberId"),
                         member.username,
@@ -85,9 +111,27 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .fetchResults();
+                .fetchResults();*/
 
-        return new PageImpl<>(result.getResults(), pageable, result.getTotal());
+        JPQLQuery<MemberTeamDto> query = from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe())
+                )
+                .select(Projections.constructor(MemberTeamDto.class,
+                        member.id.as("memberId"),
+                        member.username,
+                        member.age,
+                        team.id.as("teamId"),
+                        team.name.as("teamName")));
+
+        JPQLQuery<MemberTeamDto> memberTeamDtoJPQLQuery = getQuerydsl().applyPagination(pageable, query);
+        QueryResults<MemberTeamDto> memberTeamDtoQueryResults = memberTeamDtoJPQLQuery.fetchResults();
+
+        return new PageImpl<>(memberTeamDtoQueryResults.getResults(), pageable, memberTeamDtoQueryResults.getTotal());
     }
 
     @Override
